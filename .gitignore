@@ -1,0 +1,5 @@
+# Sui Move build artifacts
+build/
+
+# macOS
+.DS_Store
