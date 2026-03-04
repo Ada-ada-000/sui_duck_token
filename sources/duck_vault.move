@@ -1,5 +1,5 @@
 module duck_vault::duck_vault {
-    use duck_token::duck_token::DUCK;
+    use duck_token::duck_token::DUCK_TOKEN as DUCK;
     use sui::balance::{Self, Balance};
     use sui::coin::{Self, Coin};
 
