@@ -3,7 +3,7 @@
 
 [move]
 version = 3
-manifest_digest = "28FB6514B5269B76BB9221DE1E53B0B3D28D00356CB3CEA21BF52FD60C39F507"
+manifest_digest = "4BE33C84FEAA61FE7D00480C6BF7901E3BEB69A1DD9B9D674E1408AF9161F8E0"
 deps_digest = "F9B494B64F0615AED0E98FC12A85B85ECD2BC5185C22D30E7F67786BB52E507C"
 dependencies = [
   { id = "Bridge", name = "Bridge" },
@@ -65,3 +65,11 @@ source = { root = true }
 use_environment = "testnet"
 manifest_digest = "5745706258F61D6CE210904B3E6AE87A73CE9D31A6F93BE4718C442529332A87"
 deps = { std = "MoveStdlib", sui = "Sui" }
+
+[env]
+
+[env.testnet]
+chain-id = "4c78adac"
+original-published-id = "0xddb18dd3e10385e899e957508d2ceab971b18e9d16da63903ee9052283d57c35"
+latest-published-id = "0xddb18dd3e10385e899e957508d2ceab971b18e9d16da63903ee9052283d57c35"
+published-version = "1"
