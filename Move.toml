@@ -4,6 +4,6 @@ version = "0.0.1"
 edition = "2024.beta"
 
 [addresses]
-duck_token = "0x4509239f59360d7b7bf7dc296418c115d90226b0a16f010dbebe8d217c65e179"
-duck_vault = "0x4509239f59360d7b7bf7dc296418c115d90226b0a16f010dbebe8d217c65e179"
-duck_lending = "0x4509239f59360d7b7bf7dc296418c115d90226b0a16f010dbebe8d217c65e179"
+duck_token = "0x0"
+duck_vault = "0x0"
+duck_lending = "0x0"
