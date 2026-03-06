@@ -41,4 +41,20 @@ module duck_token::duck_token {
     public fun burn(treasury_cap: &mut TreasuryCap<DUCK_TOKEN>, coin_obj: Coin<DUCK_TOKEN>) {
         coin::burn(treasury_cap, coin_obj);
     }
+
+    #[test]
+    fun test_mint_and_burn_updates_total_supply() {
+        let mut ctx = sui::tx_context::dummy();
+        let mut cap = coin::create_treasury_cap_for_testing<DUCK_TOKEN>(&mut ctx);
+        let sender = sui::tx_context::sender(&ctx);
+
+        mint(&mut cap, 200, sender, &mut ctx);
+        assert!(coin::total_supply(&cap) == 200, 1);
+
+        let c = coin::mint(&mut cap, 300, &mut ctx);
+        burn(&mut cap, c);
+        assert!(coin::total_supply(&cap) == 200, 2);
+
+        sui::transfer::public_transfer(cap, sender);
+    }
 }
