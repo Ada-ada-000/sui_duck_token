@@ -31,6 +31,7 @@ This project contains 3 Move modules:
   - `E_BAD_RISK_PARAMS = 1007`
   - `E_POSITION_HEALTHY = 1008`
   - `E_INVALID_AMOUNT = 1009`
+  - `E_MATH_OVERFLOW = 1010`
 
 ## Testnet Deployment (Verified)
 

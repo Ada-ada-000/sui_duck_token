@@ -29,6 +29,7 @@ DUCK Protocol 是一个在 Sui 测试网运行的去中心化通用信用内核�
   - `E_BAD_RISK_PARAMS = 1007`
   - `E_POSITION_HEALTHY = 1008`
   - `E_INVALID_AMOUNT = 1009`
+  - `E_MATH_OVERFLOW = 1010`
 
 ## 2. 测试网部署信息（已验证）
 

@@ -20,6 +20,8 @@ module duck_lending::duck_lending {
     const E_BAD_RISK_PARAMS: u64 = 1007;
     const E_POSITION_HEALTHY: u64 = 1008;
     const E_INVALID_AMOUNT: u64 = 1009;
+    const E_MATH_OVERFLOW: u64 = 1010;
+    const U64_MAX: u128 = 18446744073709551615;
 
     public struct LoanPosition has store, drop {
         collateral: u64,
@@ -99,7 +101,7 @@ module duck_lending::duck_lending {
 
     /// Internal pure helper for max debt under configurable LTV.
     fun max_debt_for(collateral: u64, ltv_bps: u64): u64 {
-        (collateral * ltv_bps) / BPS_DENOMINATOR
+        mul_div_u64(collateral, ltv_bps, BPS_DENOMINATOR)
     }
 
     /// Internal pure helper to compute debt after repayment.
@@ -108,7 +110,30 @@ module duck_lending::duck_lending {
     }
 
     fun debt_with_interest(debt: u64, delta_epoch: u64, rate_bps_per_epoch: u64): u64 {
-        debt + ((debt * rate_bps_per_epoch * delta_epoch) / BPS_DENOMINATOR)
+        let debt_rate = (debt as u128) * (rate_bps_per_epoch as u128);
+        let den = BPS_DENOMINATOR as u128;
+        let delta = delta_epoch as u128;
+
+        let base = debt_rate / den;
+        let rem = debt_rate % den;
+        let total_interest = base * delta + ((rem * delta) / den);
+
+        let new_debt = (debt as u128) + total_interest;
+        assert!(new_debt <= U64_MAX, E_MATH_OVERFLOW);
+        new_debt as u64
+    }
+
+    fun mul_div_u64(a: u64, b: u64, denominator: u64): u64 {
+        assert!(denominator > 0, E_BAD_RISK_PARAMS);
+        let q = ((a as u128) * (b as u128)) / (denominator as u128);
+        assert!(q <= U64_MAX, E_MATH_OVERFLOW);
+        q as u64
+    }
+
+    fun add_u64_checked(a: u64, b: u64): u64 {
+        let s = (a as u128) + (b as u128);
+        assert!(s <= U64_MAX, E_MATH_OVERFLOW);
+        s as u64
     }
 
     fun min_u64(a: u64, b: u64): u64 {
@@ -116,11 +141,15 @@ module duck_lending::duck_lending {
     }
 
     fun is_unhealthy(collateral: u64, debt: u64, liquidation_ltv_bps: u64): bool {
-        debt * BPS_DENOMINATOR > collateral * liquidation_ltv_bps
+        if (collateral == 0) {
+            debt > 0
+        } else {
+            debt > max_debt_for(collateral, liquidation_ltv_bps)
+        }
     }
 
     fun seize_amount_for_liquidation(repay_amount: u64, bonus_bps: u64): u64 {
-        (repay_amount * (BPS_DENOMINATOR + bonus_bps)) / BPS_DENOMINATOR
+        mul_div_u64(repay_amount, BPS_DENOMINATOR + bonus_bps, BPS_DENOMINATOR)
     }
 
     fun assert_admin(cap: &RiskAdminCap, sender: address) {
@@ -252,7 +281,7 @@ module duck_lending::duck_lending {
                 sui::tx_context::epoch(ctx),
                 pool.borrow_rate_bps_per_epoch,
             );
-            position.collateral = position.collateral + amount;
+            position.collateral = add_u64_checked(position.collateral, amount);
         } else {
             table::add(
                 &mut pool.positions,
@@ -285,7 +314,7 @@ module duck_lending::duck_lending {
         assert!(position.collateral > 0, E_INSUFFICIENT_COLLATERAL);
 
         let max_debt = max_debt_for(position.collateral, pool.borrow_ltv_bps);
-        let new_debt = position.debt + amount;
+        let new_debt = add_u64_checked(position.debt, amount);
         assert!(new_debt <= max_debt, E_LTV_RATIO_ERROR);
         assert!(balance::value(&pool.collateral_pool) >= amount, E_INSUFFICIENT_COLLATERAL);
 
@@ -553,6 +582,16 @@ module duck_lending::duck_lending {
     fun test_interest_math() {
         assert!(debt_with_interest(100, 10, 10) == 101, 43);
         assert!(debt_with_interest(1_000, 100, 100) == 2_000, 44);
+    }
+
+    #[test, expected_failure(abort_code = E_MATH_OVERFLOW)]
+    fun test_add_overflow_protected() {
+        let _ = add_u64_checked(18446744073709551615, 1);
+    }
+
+    #[test, expected_failure(abort_code = E_MATH_OVERFLOW)]
+    fun test_interest_overflow_protected() {
+        let _ = debt_with_interest(18446744073709551615, 2, 10_000);
     }
 
     #[test]
