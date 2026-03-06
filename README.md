@@ -147,3 +147,9 @@ sui client call \
 ## 7. GitHub
 
 - Repository: https://github.com/Ada-ada-000/sui_duck_token.git
+
+## 8. 风险边界（面试说明）
+
+- 当前实现是教学/演示版借贷协议，不包含预言机、清算、利息模型和坏账处理。
+- 价格假设为固定计价（DUCK 抵押 DUCK），用于展示 Move 资产流和状态约束，不代表生产级金融风控。
+- `borrow/repay/redeem` 与 `vault` 流程中的 `self_transfer` 是刻意的 UX 选择：直接把结果资产转给交易发起者，便于前端集成；如需更高可组合性，可改成返回 `Coin<T>` 由调用方继续编排。

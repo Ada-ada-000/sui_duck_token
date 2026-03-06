@@ -115,3 +115,9 @@ sui client call \
   --args 0x7dcd9eb4ea030820f680baa53afe5a979fd6a7c472e2ca22e74df458b6363747 500000000 \
   --gas-budget 100000000
 ```
+
+## Risk Boundaries (Interview Notes)
+
+- This repository is a demo-level lending protocol and intentionally does not include oracle pricing, liquidation, interest accrual, or bad-debt handling.
+- The pricing assumption is fixed-value collateralization (DUCK against DUCK), meant to demonstrate Move asset/state constraints rather than production-grade DeFi risk controls.
+- `borrow/repay/redeem` and vault flows intentionally use `self_transfer` for simpler UX (assets are sent directly to tx sender). For higher composability, these functions can be refactored to return `Coin<T>` to the caller.

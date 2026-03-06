@@ -12,6 +12,7 @@ module duck_vault::duck_vault {
     }
 
     /// Create an empty personal vault.
+    #[allow(lint(self_transfer))]
     public fun create_vault(ctx: &mut sui::tx_context::TxContext) {
         let vault = DuckVault {
             id: sui::object::new(ctx),
@@ -28,6 +29,7 @@ module duck_vault::duck_vault {
     }
 
     /// Withdraw DUCK from vault to owner.
+    #[allow(lint(self_transfer))]
     public fun withdraw(vault: &mut DuckVault, amount: u64, ctx: &mut sui::tx_context::TxContext) {
         assert!(vault.owner == sui::tx_context::sender(ctx), E_NOT_OWNER);
         let coin_obj = coin::take(&mut vault.vault_balance, amount, ctx);

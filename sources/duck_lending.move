@@ -67,6 +67,7 @@ module duck_lending::duck_lending {
     }
 
     /// Borrow DUCK from collateral pool with max LTV 50%.
+    #[allow(lint(self_transfer))]
     public fun borrow(pool: &mut DuckLending, amount: u64, ctx: &mut sui::tx_context::TxContext) {
         let sender = sui::tx_context::sender(ctx);
         assert!(table::contains(&pool.positions, sender), E_INSUFFICIENT_COLLATERAL);
@@ -85,6 +86,7 @@ module duck_lending::duck_lending {
     }
 
     /// Repay DUCK debt.
+    #[allow(lint(self_transfer))]
     public fun repay(pool: &mut DuckLending, mut payment: Coin<DUCK>, ctx: &mut sui::tx_context::TxContext) {
         let sender = sui::tx_context::sender(ctx);
         assert!(table::contains(&pool.positions, sender), E_NO_LOAN);
@@ -112,6 +114,7 @@ module duck_lending::duck_lending {
     }
 
     /// Redeem collateral after loan is fully repaid.
+    #[allow(lint(self_transfer))]
     public fun redeem(pool: &mut DuckLending, amount: u64, ctx: &mut sui::tx_context::TxContext) {
         let sender = sui::tx_context::sender(ctx);
         assert!(table::contains(&pool.positions, sender), E_NO_LOAN);
@@ -142,6 +145,23 @@ module duck_lending::duck_lending {
         } else {
             (0, 0)
         }
+    }
+
+    #[test_only]
+    fun new_pool_for_testing(ctx: &mut sui::tx_context::TxContext): DuckLending {
+        DuckLending {
+            id: sui::object::new(ctx),
+            collateral_pool: balance::zero(),
+            positions: table::new(ctx),
+        }
+    }
+
+    #[test_only]
+    fun destroy_pool_for_testing(pool: DuckLending) {
+        let DuckLending { id, collateral_pool, positions } = pool;
+        balance::destroy_zero(collateral_pool);
+        table::drop(positions);
+        sui::object::delete(id);
     }
 
     #[test]
@@ -176,5 +196,55 @@ module duck_lending::duck_lending {
     fun test_debt_after_repay_zero_debt() {
         assert!(debt_after_repay(0, 0) == 0, 41);
         assert!(debt_after_repay(0, 999) == 0, 42);
+    }
+
+    #[test]
+    fun test_flow_pledge_borrow_repay_redeem() {
+        let mut ctx = sui::tx_context::dummy();
+        let mut pool = new_pool_for_testing(&mut ctx);
+
+        let collateral = coin::mint_for_testing<DUCK>(1_000, &mut ctx);
+        pledge(&mut pool, collateral, &ctx);
+        let (c1, d1) = get_loan_info(&pool, sui::tx_context::sender(&ctx));
+        assert!(c1 == 1_000, 51);
+        assert!(d1 == 0, 52);
+
+        borrow(&mut pool, 500, &mut ctx);
+        let (c2, d2) = get_loan_info(&pool, sui::tx_context::sender(&ctx));
+        assert!(c2 == 1_000, 53);
+        assert!(d2 == 500, 54);
+
+        let payment = coin::mint_for_testing<DUCK>(500, &mut ctx);
+        repay(&mut pool, payment, &mut ctx);
+        let (c3, d3) = get_loan_info(&pool, sui::tx_context::sender(&ctx));
+        assert!(c3 == 1_000, 55);
+        assert!(d3 == 0, 56);
+
+        redeem(&mut pool, 1_000, &mut ctx);
+        let (c4, d4) = get_loan_info(&pool, sui::tx_context::sender(&ctx));
+        assert!(c4 == 0, 57);
+        assert!(d4 == 0, 58);
+        destroy_pool_for_testing(pool);
+    }
+
+    #[test, expected_failure(abort_code = E_LTV_RATIO_ERROR)]
+    fun test_borrow_above_ltv_fails() {
+        let mut ctx = sui::tx_context::dummy();
+        let mut pool = new_pool_for_testing(&mut ctx);
+        let collateral = coin::mint_for_testing<DUCK>(100, &mut ctx);
+        pledge(&mut pool, collateral, &ctx);
+        borrow(&mut pool, 51, &mut ctx);
+        abort 991
+    }
+
+    #[test, expected_failure(abort_code = E_OUTSTANDING_DEBT)]
+    fun test_redeem_with_debt_fails() {
+        let mut ctx = sui::tx_context::dummy();
+        let mut pool = new_pool_for_testing(&mut ctx);
+        let collateral = coin::mint_for_testing<DUCK>(100, &mut ctx);
+        pledge(&mut pool, collateral, &ctx);
+        borrow(&mut pool, 50, &mut ctx);
+        redeem(&mut pool, 10, &mut ctx);
+        abort 992
     }
 }

@@ -1,0 +1,27 @@
+name: Move CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Sui CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/MystenLabs/sui/main/scripts/install-sui.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Show Sui version
+        run: sui --version
+
+      - name: Build Move package
+        run: sui move build
+
+      - name: Run Move tests
+        run: sui move test
