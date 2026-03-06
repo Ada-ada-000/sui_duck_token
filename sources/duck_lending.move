@@ -10,6 +10,7 @@ module duck_lending::duck_lending {
     const E_NO_LOAN: u64 = 1001;
     const E_INSUFFICIENT_COLLATERAL: u64 = 1002;
     const E_LTV_RATIO_ERROR: u64 = 1003;
+    const E_OUTSTANDING_DEBT: u64 = 1004;
 
     public struct LoanPosition has store, drop {
         collateral: u64,
@@ -20,6 +21,16 @@ module duck_lending::duck_lending {
         id: sui::object::UID,
         collateral_pool: Balance<DUCK>,
         positions: Table<address, LoanPosition>,
+    }
+
+    /// Internal pure helper for max debt under fixed LTV.
+    fun max_debt_for(collateral: u64): u64 {
+        (collateral * LTV_NUMERATOR) / LTV_DENOMINATOR
+    }
+
+    /// Internal pure helper to compute debt after repayment.
+    fun debt_after_repay(current_debt: u64, payment_value: u64): u64 {
+        if (payment_value >= current_debt) 0 else current_debt - payment_value
     }
 
     /// Create lending pool as shared object.
@@ -63,7 +74,7 @@ module duck_lending::duck_lending {
         let position = table::borrow_mut(&mut pool.positions, sender);
         assert!(position.collateral > 0, E_INSUFFICIENT_COLLATERAL);
 
-        let max_debt = (position.collateral * LTV_NUMERATOR) / LTV_DENOMINATOR;
+        let max_debt = max_debt_for(position.collateral);
         let new_debt = position.debt + amount;
         assert!(new_debt <= max_debt, E_LTV_RATIO_ERROR);
         assert!(balance::value(&pool.collateral_pool) >= amount, E_INSUFFICIENT_COLLATERAL);
@@ -87,7 +98,7 @@ module duck_lending::duck_lending {
         if (payment_value >= debt) {
             let repay_coin = coin::split(&mut payment, debt, ctx);
             coin::put(&mut pool.collateral_pool, repay_coin);
-            position.debt = 0;
+            position.debt = debt_after_repay(debt, debt);
 
             if (coin::value(&payment) > 0) {
                 sui::transfer::public_transfer(payment, sender);
@@ -96,7 +107,30 @@ module duck_lending::duck_lending {
             };
         } else {
             coin::put(&mut pool.collateral_pool, payment);
-            position.debt = debt - payment_value;
+            position.debt = debt_after_repay(debt, payment_value);
+        };
+    }
+
+    /// Redeem collateral after loan is fully repaid.
+    public fun redeem(pool: &mut DuckLending, amount: u64, ctx: &mut sui::tx_context::TxContext) {
+        let sender = sui::tx_context::sender(ctx);
+        assert!(table::contains(&pool.positions, sender), E_NO_LOAN);
+
+        let should_remove_position = {
+            let position = table::borrow_mut(&mut pool.positions, sender);
+            assert!(position.debt == 0, E_OUTSTANDING_DEBT);
+            assert!(amount > 0 && amount <= position.collateral, E_INSUFFICIENT_COLLATERAL);
+            assert!(balance::value(&pool.collateral_pool) >= amount, E_INSUFFICIENT_COLLATERAL);
+
+            position.collateral = position.collateral - amount;
+            position.collateral == 0
+        };
+
+        let collateral_coin = coin::take(&mut pool.collateral_pool, amount, ctx);
+        sui::transfer::public_transfer(collateral_coin, sender);
+
+        if (should_remove_position) {
+            let _ = table::remove(&mut pool.positions, sender);
         };
     }
 
@@ -108,5 +142,39 @@ module duck_lending::duck_lending {
         } else {
             (0, 0)
         }
+    }
+
+    #[test]
+    fun test_max_debt_for() {
+        assert!(max_debt_for(0) == 0, 1);
+        assert!(max_debt_for(2) == 1, 2);
+        assert!(max_debt_for(1_000_000_000) == 500_000_000, 3);
+        assert!(max_debt_for(3) == 1, 4);
+    }
+
+    #[test]
+    fun test_debt_after_repay_partial() {
+        assert!(debt_after_repay(100, 20) == 80, 11);
+        assert!(debt_after_repay(100, 99) == 1, 12);
+        assert!(debt_after_repay(100, 0) == 100, 13);
+    }
+
+    #[test]
+    fun test_debt_after_repay_full_or_overpay() {
+        assert!(debt_after_repay(100, 100) == 0, 21);
+        assert!(debt_after_repay(100, 120) == 0, 22);
+        assert!(debt_after_repay(0, 10) == 0, 23);
+    }
+
+    #[test]
+    fun test_max_debt_rounding_floor() {
+        assert!(max_debt_for(5) == 2, 31);
+        assert!(max_debt_for(7) == 3, 32);
+    }
+
+    #[test]
+    fun test_debt_after_repay_zero_debt() {
+        assert!(debt_after_repay(0, 0) == 0, 41);
+        assert!(debt_after_repay(0, 999) == 0, 42);
     }
 }

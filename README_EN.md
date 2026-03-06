@@ -17,10 +17,12 @@ This project contains 3 Move modules:
 - Description: `Decentralized universal credit kernel, on-chain credit, cross-chain settlement.`
 - Decimals: `9`
 - LTV: `50%`
+- Currency Init Standard: `coin_registry::new_currency_with_otw`
 - Error codes:
   - `E_NO_LOAN = 1001`
   - `E_INSUFFICIENT_COLLATERAL = 1002`
   - `E_LTV_RATIO_ERROR = 1003`
+  - `E_OUTSTANDING_DEBT = 1004`
 
 ## Testnet Deployment (Verified)
 
@@ -36,6 +38,7 @@ This project contains 3 Move modules:
 
 ```bash
 sui move build
+sui move test
 ```
 
 ## Publish
@@ -99,5 +102,16 @@ sui client call \
   --module duck_lending \
   --function get_loan_info \
   --args 0x7dcd9eb4ea030820f680baa53afe5a979fd6a7c472e2ca22e74df458b6363747 0x4509239f59360d7b7bf7dc296418c115d90226b0a16f010dbebe8d217c65e179 \
+  --gas-budget 100000000
+```
+
+### Redeem Collateral (debt must be 0)
+
+```bash
+sui client call \
+  --package 0xddb18dd3e10385e899e957508d2ceab971b18e9d16da63903ee9052283d57c35 \
+  --module duck_lending \
+  --function redeem \
+  --args 0x7dcd9eb4ea030820f680baa53afe5a979fd6a7c472e2ca22e74df458b6363747 500000000 \
   --gas-budget 100000000
 ```
