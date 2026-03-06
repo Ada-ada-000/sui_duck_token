@@ -8,7 +8,7 @@ This project contains 3 Move modules:
 
 - `duck_token::duck_token`: DUCK token (9 decimals)
 - `duck_vault::duck_vault`: personal vault (deposit / withdraw / balance)
-- `duck_lending::duck_lending`: lending pool (50% LTV, pledge / borrow / repay / query)
+- `duck_lending::duck_lending`: lending pool (configurable LTV, pledge / borrow / repay / redeem / liquidate / pause)
 
 ## Fixed Parameters
 
@@ -16,13 +16,20 @@ This project contains 3 Move modules:
 - Name: `Decentral Universal Credit Kernel`
 - Description: `Decentralized universal credit kernel, on-chain credit, cross-chain settlement.`
 - Decimals: `9`
-- LTV: `50%`
+- Default Borrow LTV: `50% (5000 bps)`
+- Default Liquidation Threshold: `70% (7000 bps)`
+- Default Liquidation Bonus: `5% (500 bps)`
 - Currency Init Standard: `coin_registry::new_currency_with_otw`
 - Error codes:
   - `E_NO_LOAN = 1001`
   - `E_INSUFFICIENT_COLLATERAL = 1002`
   - `E_LTV_RATIO_ERROR = 1003`
   - `E_OUTSTANDING_DEBT = 1004`
+  - `E_PROTOCOL_PAUSED = 1005`
+  - `E_NOT_ADMIN = 1006`
+  - `E_BAD_RISK_PARAMS = 1007`
+  - `E_POSITION_HEALTHY = 1008`
+  - `E_INVALID_AMOUNT = 1009`
 
 ## Testnet Deployment (Verified)
 
@@ -116,8 +123,30 @@ sui client call \
   --gas-budget 100000000
 ```
 
+### Set Risk Parameters (admin only)
+
+```bash
+sui client call \
+  --package 0xddb18dd3e10385e899e957508d2ceab971b18e9d16da63903ee9052283d57c35 \
+  --module duck_lending \
+  --function set_risk_params \
+  --args 0x7dcd9eb4ea030820f680baa53afe5a979fd6a7c472e2ca22e74df458b6363747 <RISK_ADMIN_CAP_ID> 5000 7000 500 \
+  --gas-budget 100000000
+```
+
+### Liquidate Unhealthy Position
+
+```bash
+sui client call \
+  --package 0xddb18dd3e10385e899e957508d2ceab971b18e9d16da63903ee9052283d57c35 \
+  --module duck_lending \
+  --function liquidate \
+  --args 0x7dcd9eb4ea030820f680baa53afe5a979fd6a7c472e2ca22e74df458b6363747 <BORROWER_ADDRESS> <DUCK_COIN_ID_FOR_REPAY> \
+  --gas-budget 100000000
+```
+
 ## Risk Boundaries (Interview Notes)
 
-- This repository is a demo-level lending protocol and intentionally does not include oracle pricing, liquidation, interest accrual, or bad-debt handling.
-- The pricing assumption is fixed-value collateralization (DUCK against DUCK), meant to demonstrate Move asset/state constraints rather than production-grade DeFi risk controls.
+- This repository is still a demo-level lending protocol, but now includes basic liquidation and risk-parameter governance. It still does not include oracle pricing, interest accrual, or bad-debt auction handling.
+- The pricing assumption is fixed-value collateralization (DUCK against DUCK), meant to demonstrate Move asset/state/liquidation constraints rather than production-grade DeFi risk controls.
 - `borrow/repay/redeem` and vault flows intentionally use `self_transfer` for simpler UX (assets are sent directly to tx sender). For higher composability, these functions can be refactored to return `Coin<T>` to the caller.
