@@ -19,6 +19,7 @@ This project contains 3 Move modules:
 - Default Borrow LTV: `50% (5000 bps)`
 - Default Liquidation Threshold: `70% (7000 bps)`
 - Default Liquidation Bonus: `5% (500 bps)`
+- Default Borrow Interest Rate: `0.10% / epoch (10 bps)`
 - Currency Init Standard: `coin_registry::new_currency_with_otw`
 - Error codes:
   - `E_NO_LOAN = 1001`
@@ -145,8 +146,30 @@ sui client call \
   --gas-budget 100000000
 ```
 
+### Set Borrow Interest Rate (per epoch, admin)
+
+```bash
+sui client call \
+  --package 0xddb18dd3e10385e899e957508d2ceab971b18e9d16da63903ee9052283d57c35 \
+  --module duck_lending \
+  --function set_interest_rate \
+  --args 0x7dcd9eb4ea030820f680baa53afe5a979fd6a7c472e2ca22e74df458b6363747 <RISK_ADMIN_CAP_ID> 10 \
+  --gas-budget 100000000
+```
+
+### Trigger Interest Accrual for a User (keeper)
+
+```bash
+sui client call \
+  --package 0xddb18dd3e10385e899e957508d2ceab971b18e9d16da63903ee9052283d57c35 \
+  --module duck_lending \
+  --function accrue_interest \
+  --args 0x7dcd9eb4ea030820f680baa53afe5a979fd6a7c472e2ca22e74df458b6363747 <USER_ADDRESS> \
+  --gas-budget 100000000
+```
+
 ## Risk Boundaries (Interview Notes)
 
-- This repository is still a demo-level lending protocol, but now includes basic liquidation and risk-parameter governance. It still does not include oracle pricing, interest accrual, or bad-debt auction handling.
-- The pricing assumption is fixed-value collateralization (DUCK against DUCK), meant to demonstrate Move asset/state/liquidation constraints rather than production-grade DeFi risk controls.
+- This repository is still a demo-level lending protocol, but now includes basic liquidation, interest accrual (epoch-based linear rate), and risk-parameter governance. It still does not include oracle pricing or bad-debt auction handling.
+- The pricing assumption is fixed-value collateralization (DUCK against DUCK), meant to demonstrate Move asset/state/liquidation constraints and on-chain event observability rather than production-grade DeFi risk controls.
 - `borrow/repay/redeem` and vault flows intentionally use `self_transfer` for simpler UX (assets are sent directly to tx sender). For higher composability, these functions can be refactored to return `Coin<T>` to the caller.
