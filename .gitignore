@@ -3,3 +3,7 @@ build/
 
 # macOS
 .DS_Store
+
+# Local unrelated work folders
+EVE frontier✖️Sui/
+web3_fullstack_template/

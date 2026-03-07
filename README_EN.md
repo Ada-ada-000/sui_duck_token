@@ -1,10 +1,10 @@
 # DUCK Protocol (Sui Move)
 
-English version of deployment and usage guide for the DUCK Protocol demo on Sui Testnet.
+This document provides my English deployment and usage notes for the DUCK Protocol demo on Sui Testnet.
 
 ## Overview
 
-This project contains 3 Move modules:
+In this repository, I implemented 3 Move modules:
 
 - `duck_token::duck_token`: DUCK token (9 decimals)
 - `duck_vault::duck_vault`: personal vault (deposit / withdraw / balance)
@@ -33,7 +33,7 @@ This project contains 3 Move modules:
   - `E_INVALID_AMOUNT = 1009`
   - `E_MATH_OVERFLOW = 1010`
 
-## Testnet Deployment (Verified)
+## Testnet Deployment (for the deployed demo version)
 
 - Network: `Sui Testnet`
 - Publisher: `0x4509239f59360d7b7bf7dc296418c115d90226b0a16f010dbebe8d217c65e179`
@@ -42,6 +42,8 @@ This project contains 3 Move modules:
 - CoinMetadata<DUCK_TOKEN>: `0xb4fea490ec15f1a11addfcc664f2e7c1fd291f19dcf4284beaacb9d8eda0a301`
 - DuckLending (shared): `0x7dcd9eb4ea030820f680baa53afe5a979fd6a7c472e2ca22e74df458b6363747`
 - Example DuckVault (owned): `0x159fa941b082cbef70fbe0258364a39a2efb40ad3d107894ab3eddc7b635b1ac`
+
+Note: these object IDs correspond to the deployed demo flow that I verified on testnet. The repository has continued to evolve, so if you need strict parity with the latest code, please republish using Section 5 and use the new `Package ID`.
 
 ## Build
 
@@ -169,7 +171,7 @@ sui client call \
   --gas-budget 100000000
 ```
 
-## Risk Boundaries (Interview Notes)
+## Risk Boundaries and Current Limitations
 
 - This repository is still a demo-level lending protocol, but now includes basic liquidation, interest accrual (epoch-based linear rate), and risk-parameter governance. It still does not include oracle pricing or bad-debt auction handling.
 - The pricing assumption is fixed-value collateralization (DUCK against DUCK), meant to demonstrate Move asset/state/liquidation constraints and on-chain event observability rather than production-grade DeFi risk controls.
