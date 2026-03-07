@@ -169,7 +169,7 @@ sui client call \
   --gas-budget 100000000
 ```
 
-## Risk Boundaries (Interview Notes)
+## Risk Boundaries and Current Limitations
 
 - This repository is still a demo-level lending protocol, but now includes basic liquidation, interest accrual (epoch-based linear rate), and risk-parameter governance. It still does not include oracle pricing or bad-debt auction handling.
 - The pricing assumption is fixed-value collateralization (DUCK against DUCK), meant to demonstrate Move asset/state/liquidation constraints and on-chain event observability rather than production-grade DeFi risk controls.

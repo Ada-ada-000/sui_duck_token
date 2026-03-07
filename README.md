@@ -201,7 +201,7 @@ sui client call \
 
 - Repository: https://github.com/Ada-ada-000/sui_duck_token.git
 
-## 8. 风险边界（面试说明）
+## 8. 风险边界与当前限制
 
 - 当前实现是教学/演示版借贷协议，已包含基础清算与风险参数治理，但仍不包含预言机、利息模型和坏账拍卖处理。
 - 当前已包含基础利率计提（按 epoch 线性计息）与链上事件（pledge/borrow/repay/redeem/liquidate/risk updates）。
